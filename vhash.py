@@ -57,7 +57,7 @@ def vhash_match(video1, video2):
     vhash2 = vhash(video2)
 
     def match_function(a, b):
-        return hamming_distance(a, b) < 16  # tolerant minor difference
+        return hamming_distance(a, b) <= 8  # tolerant minor difference
 
     return CustomSequenceMatcher(None, vhash1, vhash2, match_function).ratio()
 
