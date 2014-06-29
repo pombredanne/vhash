@@ -63,10 +63,9 @@ def vhash_match(video1, video2):
 
 
 def print_usage():
-    print('Usage:')
-    print('    {} gen video'.format(os.path.basename(__file__)))
-    print('    {} match video1 video2'.format(os.path.basename(__file__)))
-    print('    {} matchdir folder'.format(os.path.basename(__file__)))
+    print("""Usage:
+    {0} gen video ...
+    {0} match video_or_folder ...""".format(os.path.basename(__file__)))
 
 
 def print_similarity(match_ratio):
@@ -82,47 +81,33 @@ def print_similarity(match_ratio):
 
 def main():
     cmd = None
-    path1 = None
-    path2 = None
+    target_files = []
+    target_folders = []
     try:
         cmd = sys.argv[1]
-        if cmd == 'gen':
-            path1 = sys.argv[2]
-            if not os.path.isfile(path1):
-                raise ValueError('path1 should be an existed file.')
-        elif cmd == 'match':
-            path1 = sys.argv[2]
-            path2 = sys.argv[3]
-            if not os.path.isfile(path1):
-                raise ValueError('path1 should be an existed file.')
-            if not os.path.isfile(path2):
-                raise ValueError('path2 should be an existed file.')
-        elif cmd == 'matchdir':
-            path1 = sys.argv[2]
-            if not os.path.isdir(path1):
-                raise ValueError('path1 should be an existed folder.')
-        else:
+        target_files = [x for x in sys.argv[2:] if os.path.isfile(x)]
+        target_folders = [x for x in sys.argv[2:] if os.path.isdir(x)]
+        if cmd not in ('gen', 'match'):
             raise ValueError('Unsupported command.')
     except Exception:
         print_usage()
     else:
         if cmd == 'gen':
-            print('Processing:\n  {}'.format(path1))
-            vhash1 = vhash(path1)
-            if vhash1:
-                basename, ext = os.path.splitext(path1)
-                vhashpath = '{}.vh1'.format(basename)
-                if not os.path.exists(vhashpath):
-                    print 'Writing video hash to file...'
-                    with bz2.BZ2File(vhashpath, 'w') as fout:
-                        json.dump(vhash1, fout)
+            for x in target_files:
+                print('Processing:\n  {}'.format(x))
+                vhash1 = vhash(x)
+                if vhash1:
+                    basename, ext = os.path.splitext(x)
+                    vhashpath = '{}.vh1'.format(basename)
+                    if not os.path.exists(vhashpath):
+                        print 'Writing video hash to file...'
+                        with bz2.BZ2File(vhashpath, 'w') as fout:
+                            json.dump(vhash1, fout)
         elif cmd == 'match':
-            print('Comparing:\n  {}\n  {}'.format(path1, path2))
-            match_ratio = vhash_match(path1, path2)
-            print_similarity(match_ratio)
-        elif cmd == 'matchdir':
-            filelist = glob.iglob(os.path.join(path1, '*.vh1'))
-            for file1, file2 in itertools.combinations(filelist, 2):
+            for x in target_folders:
+                target_files.extend(glob.iglob(os.path.join(x, '*.vh1')))
+            print('Start comparing {} files'.format(len(target_files)))
+            for file1, file2 in itertools.combinations(target_files, 2):
                 print('Comparing:\n  {}\n  {}'.format(file1, file2))
                 match_ratio = vhash_match(file1, file2)
                 print_similarity(match_ratio)
