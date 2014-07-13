@@ -9,6 +9,16 @@ import itertools
 import cv2
 from difflib2 import CustomSequenceMatcher
 
+try:
+    from gmpy2 import popcount as bit_count
+except:
+    def bit_count(x):
+        dist = 0
+        while x:
+            dist += 1
+            x &= x - 1
+        return dist
+
 
 def vhash(video_path, force=False):
     basename, ext = os.path.splitext(video_path)
@@ -43,21 +53,12 @@ def vhash(video_path, force=False):
         print('Failed to open file, the file may not be a video.')
 
 
-def hamming_distance(x, y):
-    dist = 0
-    val = x ^ y
-    while val:
-        dist += 1
-        val &= val - 1
-    return dist
-
-
 def vhash_match(video1, video2):
     vhash1 = vhash(video1)
     vhash2 = vhash(video2)
 
     def match_function(a, b):
-        return hamming_distance(a, b) <= 8  # tolerant minor difference
+        return bit_count(a ^ b) <= 8  # tolerant minor difference
 
     return CustomSequenceMatcher(None, vhash1, vhash2, match_function).ratio()
 
