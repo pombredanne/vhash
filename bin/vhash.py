@@ -6,7 +6,6 @@ import glob
 import ast
 import bz2
 import itertools
-from difflib2 import CustomSequenceMatcher
 
 try:
     from gmpy2 import popcount as bit_count
@@ -41,10 +40,9 @@ def vhash_match(video1, video2):
     vhash1 = vhash(video1)
     vhash2 = vhash(video2)
 
-    def match_function(a, b):
-        return bit_count(a ^ b) <= 8  # tolerant minor difference
-
-    return CustomSequenceMatcher(None, vhash1, vhash2, match_function).ratio()
+    scores = [min(bit_count(vh1 ^ vh2) for vh2 in vhash2) for vh1 in vhash1]
+    match_ratio = float(sum(s <= 8 for s in scores)) / len(scores)
+    return match_ratio
 
 
 def print_usage():
@@ -55,11 +53,11 @@ def print_usage():
 
 def print_similarity(match_ratio):
     if match_ratio > 0.2:
-        print('Very High Similarity: {:.2f}%'.format(match_ratio * 100))
+        print('\033[0;31mVery High Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
     elif match_ratio > 0.1:
-        print('High Similarity: {:.2f}%'.format(match_ratio * 100))
+        print('\033[0;35mHigh Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
     elif match_ratio > 0.05:
-        print('Medium Similarity: {:.2f}%'.format(match_ratio * 100))
+        print('\033[0;33mMedium Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
     else:
         print('Low Similarity: {:.2f}%'.format(match_ratio * 100))
 
