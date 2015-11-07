@@ -18,7 +18,15 @@ except:
 def vhash(video_path, force=False):
     basename, ext = os.path.splitext(video_path)
     vhashpath = '{}.vh2'.format(basename)
+    cached = False
+
     if os.path.exists(vhashpath):
+        if os.path.getsize(vhashpath) > 0:
+            cached = True
+        else:
+            os.remove(vhashpath)  # remove invalid vh2
+
+    if cached:
         print('Getting cached video hash...')
         with open(vhashpath, 'r') as fp:
             result = [int(line, 16) for line in fp]
@@ -36,6 +44,12 @@ def vhash(video_path, force=False):
 def vhash_match(video1, video2):
     vhash1 = vhash(video1)
     vhash2 = vhash(video2)
+
+    if not vhash1 or not vhash2:
+        return 0
+
+    if len(vhash2) > len(vhash1):
+        vhash1, vhash2 = vhash2, vhash1
 
     scores = [min(bit_count(vh1 ^ vh2) for vh2 in vhash2) for vh1 in vhash1]
     match_ratio = float(sum(s <= 8 for s in scores)) / len(scores)
@@ -79,6 +93,9 @@ def main():
         elif cmd == 'match':
             for x in target_folders:
                 target_files.extend(glob.iglob(os.path.join(x, '*.vh2')))
+                for path, dirs, files in os.walk(x):
+                    for subdir in dirs:
+                        target_files.extend(glob.iglob(os.path.join(path, subdir, '*.vh2')))
             print('Start comparing {} files'.format(len(target_files)))
             for file1, file2 in itertools.combinations(target_files, 2):
                 print('Comparing:\n  {}\n  {}'.format(file1, file2))
