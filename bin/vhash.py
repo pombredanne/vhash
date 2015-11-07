@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-import json
 import glob
-import ast
-import bz2
 import itertools
 
 try:
