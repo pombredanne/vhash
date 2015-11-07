@@ -49,11 +49,11 @@ def print_usage():
 
 
 def print_similarity(match_ratio):
-    if match_ratio > 0.2:
+    if match_ratio > 0.6:
         print('\033[0;31mVery High Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
-    elif match_ratio > 0.1:
+    elif match_ratio > 0.4:
         print('\033[0;35mHigh Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
-    elif match_ratio > 0.05:
+    elif match_ratio > 0.2:
         print('\033[0;33mMedium Similarity: {:.2f}%\033[0m'.format(match_ratio * 100))
     else:
         print('Low Similarity: {:.2f}%'.format(match_ratio * 100))
