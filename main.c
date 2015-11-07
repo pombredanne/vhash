@@ -137,6 +137,11 @@ static int open_codec_context(int *stream_idx, AVFormatContext *fmt_ctx, enum AV
     else {
         stream_index = ret;
         st = fmt_ctx->streams[stream_index];
+        if (st->duration == 1) {
+            fprintf(stderr, "Not a video '%s'\n",
+                    src_filename);
+            return AVERROR(EINVAL);
+        }
         
         /* find decoder for the stream */
         dec_ctx = st->codec;
@@ -198,7 +203,7 @@ int main(int argc, const char * argv[])
         video_dst_file = fopen(video_dst_filename, "wb");
         if (!video_dst_file) {
             fprintf(stderr, "Could not open destination file %s\n", video_dst_filename);
-            ret = 1;
+            ret = AVERROR(EIO);
             goto end;
         }
         
@@ -213,7 +218,7 @@ int main(int argc, const char * argv[])
     
     if (!video_stream) {
         fprintf(stderr, "Could not find video stream in the input, aborting\n");
-        ret = 1;
+        ret = AVERROR(EINVAL);
         goto end;
     }
     

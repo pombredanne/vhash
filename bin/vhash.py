@@ -76,13 +76,6 @@ def main():
             for x in target_files:
                 print('Processing:\n  {}'.format(x))
                 vhash1 = vhash(x)
-                if vhash1:
-                    basename, ext = os.path.splitext(x)
-                    vhashpath = '{}.vh2'.format(basename)
-                    if not os.path.exists(vhashpath):
-                        print 'Writing video hash to file...'
-                        with bz2.BZ2File(vhashpath, 'w') as fout:
-                            json.dump(vhash1, fout)
         elif cmd == 'match':
             for x in target_folders:
                 target_files.extend(glob.iglob(os.path.join(x, '*.vh2')))
