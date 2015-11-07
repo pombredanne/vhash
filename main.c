@@ -15,7 +15,6 @@ static enum AVPixelFormat src_pix_fmt;
 static int dst_width = 8, dst_height = 8;
 static enum AVPixelFormat dst_pix_fmt = AV_PIX_FMT_GRAY8;
 static AVStream *video_stream = NULL;
-static int video_fps = 0;
 static const char *src_filename = NULL;
 static const char *video_dst_filename = NULL;
 static FILE *video_dst_file = NULL;
@@ -255,11 +254,11 @@ int main(int argc, const char * argv[])
     if (video_stream)
         printf("Demuxing video from file '%s' into '%s'\n", src_filename, video_dst_filename);
     
-    AVRational frame_rate = video_stream->avg_frame_rate;
-    video_fps = (int)roundf((float)frame_rate.num / (float)frame_rate.den);
-    
     /* read frames from the file */
-    while (av_read_frame(fmt_ctx, &pkt) >= 0) {
+    int8_t step = 2;
+    int64_t timestamp = 0;
+    while (timestamp * video_stream->time_base.den < video_stream->duration &&
+           av_read_frame(fmt_ctx, &pkt) >= 0) {
         AVPacket orig_pkt = pkt;
         do {
             ret = decode_packet(&got_frame, 0);
@@ -270,26 +269,7 @@ int main(int argc, const char * argv[])
         } while (pkt.size > 0);
         av_packet_unref(&orig_pkt);
 
-        if (got_frame && video_frame_count % video_fps == 0) {
-            /* calculate hash */
-            int hash_len = video_dst_bufsize / 3 / 4;
-            char hash[hash_len];
-            memset(hash, 0, sizeof(hash));
-            average_hash(hash, &hash_len);
-            
-            /* write to output */
-            fwrite(hash, sizeof(char), sizeof(char) * hash_len, video_dst_file);
-            fwrite("\n", sizeof(char), sizeof(char), video_dst_file);
-        }
-    }
-    
-    /* flush cached frames */
-    pkt.data = NULL;
-    pkt.size = 0;
-    do {
-        decode_packet(&got_frame, 1);
-        
-        if (got_frame && video_frame_count % video_fps == 0) {
+        if (got_frame) {
             /* calculate hash */
             int hash_len;
             char hash[video_dst_bufsize];
@@ -297,10 +277,14 @@ int main(int argc, const char * argv[])
             average_hash(hash, &hash_len);
             
             /* write to output */
-            fwrite(hash, sizeof(char), hash_len, video_dst_file);
+            fwrite(hash, sizeof(char), sizeof(char) * hash_len, video_dst_file);
             fwrite("\n", sizeof(char), sizeof(char), video_dst_file);
+            
+            timestamp += step;
+            avformat_seek_file(fmt_ctx, video_stream_idx, 0, timestamp * video_stream->time_base.den, timestamp * video_stream->time_base.den, AVSEEK_FLAG_FRAME);
+            //avcodec_flush_buffers(video_dec_ctx);
         }
-    } while (got_frame);
+    }
     
     printf("Demuxing succeeded.\n");
     
